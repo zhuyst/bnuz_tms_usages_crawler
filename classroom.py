@@ -35,6 +35,8 @@ def getUsages(building, place):
 
 # 打印考试周的考试科目
 def printTestClass():
+    print("开始获取考试科目信息...\n")
+
     buildings = getBuildings()
 
     for building in buildings['buildings']:
@@ -57,3 +59,5 @@ def printTestClass():
                     print("{} {} 第{}周 星期{} 第{} - {}节".format(department, subject,
                                                              startWeek, dayOfWeek,
                                                              startSection, endSection))
+
+    print("\n考试科目获取完毕，祝您愉快 >_+<")

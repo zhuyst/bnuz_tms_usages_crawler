@@ -4,6 +4,9 @@ import session
 # TMS系统登陆URL
 loginUrl = "http://tm.bnuz.edu.cn/uaa/login"
 
+# 登陆失败时的URL
+loginFailUrl = loginUrl + "?error"
+
 
 # 解析登陆页的HTML，用于获取表单中的CSRF Token
 class MyHtmlParser(HTMLParser):
@@ -62,4 +65,10 @@ def login():
     }
 
     # 执行登陆
-    session.post(loginUrl, data)
+    response = session.post(loginUrl, data)
+    if response.url == loginFailUrl:
+        print("账号或密码错误！")
+        return False
+    else:
+        print("登陆成功")
+        return True

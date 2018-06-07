@@ -1,5 +1,6 @@
 import classroom
 import login
 
-login.login()
-classroom.printTestClass()
+loginResult = login.login()
+if loginResult:
+    classroom.printTestClass()
