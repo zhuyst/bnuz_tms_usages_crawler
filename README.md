@@ -30,7 +30,7 @@ placesUrl = buildingsUrl + "/:building/places"
 usagesUrl = placesUrl + "/:place/usages"
 ```
 
-## 爬取内容
+## 运行效果
 
 因为考试周是在第18-19周，所以筛选出这个时间段中`type='ks'`的`usages`即可
 
