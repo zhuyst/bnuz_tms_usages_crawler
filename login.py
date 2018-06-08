@@ -2,10 +2,10 @@ from html.parser import HTMLParser
 import session
 
 # TMS系统登陆URL
-loginUrl = "http://tm.bnuz.edu.cn/uaa/login"
+loginUrl: str = "http://tm.bnuz.edu.cn/uaa/login"
 
 # 登陆失败时的URL
-loginFailUrl = loginUrl + "?error"
+loginFailUrl: str = loginUrl + "?error"
 
 
 # 解析登陆页的HTML，用于获取表单中的CSRF Token
@@ -17,7 +17,7 @@ class MyHtmlParser(HTMLParser):
 
     # CSRF Token
     @property
-    def token(self):
+    def token(self) -> str:
         return self._token
 
     def error(self, message):
@@ -41,7 +41,7 @@ class MyHtmlParser(HTMLParser):
 
 
 # 获取CSRF Token，用于进行安全验证
-def getCsrfToken():
+def getCsrfToken() -> str:
     response = session.get(loginUrl)
     parser = MyHtmlParser()
     parser.feed(response.text)
@@ -51,12 +51,12 @@ def getCsrfToken():
 
 
 # 登陆TMS系统
-def login():
-    token = getCsrfToken()
+def login() -> bool:
+    token: str = getCsrfToken()
 
     # 获取账号与密码
-    username = input("输入教务账号：")
-    password = input("输入教务密码：")
+    username: str = input("输入教务账号：")
+    password: str = input("输入教务密码：")
 
     data = {
         'username': username,
