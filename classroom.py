@@ -1,4 +1,5 @@
-from typing import List
+from typing import Coroutine
+
 import session
 import util
 
@@ -28,19 +29,25 @@ class Building(object):
 # 教室
 class Place(object):
     __slots__ = (
+        "building",  # 教学楼
+
         "name",  # 教室名
         "seat",  # 教室座位数量
         "id",  # 教室ID
         "type"  # 教室类型
     )
 
-    def __init__(self, _dict: dict):
+    def __init__(self, building: Building, _dict: dict):
+        self.building = building
         util.dictToObject(self, _dict)
 
 
 # 教室使用情况
 class Usage(object):
     __slots__ = (
+        "building",  # 教学楼
+        "place",  # 教室
+
         "startWeek",  # 开始星期
         "endWeek",  # 结束星期
         "oddEven",  # 是否是单双周（0:非单双，1:单周，2:双周）
@@ -52,61 +59,72 @@ class Usage(object):
         "department",  # 使用部门/学院
     )
 
-    def __init__(self, _dict: dict):
+    def __init__(self, place: Place, _dict: dict):
+        self.place = place
+        self.building = place.building
         util.dictToObject(self, _dict)
 
 
 # 获取教学楼
-def getBuildings() -> List[Building]:
+def getBuildings(c: Coroutine):
     response = session.get(buildingsUrl)
-
     json = response.json()
-    return list(map(lambda name: Building(name), json["buildings"]))
+    for name in json["buildings"]:
+        c.send(Building(name))
+
+    c.close()
 
 
 # 获取教室
-def getPlaces(building: Building) -> List[Place]:
-    url = placesUrl.replace(":building", building.name)
-    response = session.get(url)
+def getPlaces(c: Coroutine):
+    while True:
+        building: Building = (yield)
+        if not building:
+            return
 
-    json = response.json()
-    return list(map(lambda place: Place(place), json))
+        url = placesUrl.replace(":building", building.name)
+        response = session.get(url)
+        json = response.json()
+        for p in json:
+            c.send(Place(building, p))
+
+        c.close()
 
 
 # 获取教室使用情况
-def getUsages(building: Building, place: Place) -> List[Usage]:
-    url = usagesUrl.replace(":building", building.name).replace(":place", place.id)
-    response = session.get(url)
+def getUsages(c: Coroutine):
+    while True:
+        place: Place = (yield)
+        if not place:
+            return
 
-    json = response.json()
-    return list(map(lambda usage: Usage(usage), json))
+        url = usagesUrl.replace(":building", place.building.name).replace(":place", place.id)
+        response = session.get(url)
+        json = response.json()
+        for usage in json:
+            c.send(Usage(place, usage))
 
 
 # 打印考试周的考试科目
 def printTestClass():
     print("开始获取考试科目信息...\n")
+    # print("\n考试科目获取完毕，祝您愉快 >_+<")
 
-    buildings = getBuildings()
+    while True:
+        usage = (yield)
+        if not usage:
+            return
 
-    for building in buildings:
-        places = getPlaces(building)
+        startWeek = usage.startWeek
+        _type = usage.type
+        if _type == "ks" and startWeek == 18 or startWeek == 19:
+            department = usage.department
+            subject = usage.description
+            dayOfWeek = usage.dayOfWeek
+            startSection = usage.startSection
+            totalSection = usage.totalSection
+            endSection = startSection + totalSection - 1
 
-        for place in places:
-            usages = getUsages(building, place)
-
-            for usage in usages:
-                startWeek = usage.startWeek
-                _type = usage.type
-                if _type == "ks" and startWeek == 18 or startWeek == 19:
-                    department = usage.department
-                    subject = usage.description
-                    dayOfWeek = usage.dayOfWeek
-                    startSection = usage.startSection
-                    totalSection = usage.totalSection
-                    endSection = startSection + totalSection - 1
-
-                    print("{} {} 第{}周 星期{} 第{} - {}节".format(department, subject,
-                                                             startWeek, dayOfWeek,
-                                                             startSection, endSection))
-
-    print("\n考试科目获取完毕，祝您愉快 >_+<")
+            print("{} {} 第{}周 星期{} 第{} - {}节".format(department, subject,
+                                                     startWeek, dayOfWeek,
+                                                     startSection, endSection))
