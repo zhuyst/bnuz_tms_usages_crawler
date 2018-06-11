@@ -49,6 +49,7 @@ def printTestClass():
                 startWeek = usage["startWeek"]
                 _type = usage["type"]
                 if _type == "ks" and startWeek == 18 or startWeek == 19:
+                    placeName = place["name"]
                     department = usage["department"]
                     subject = usage["description"]
                     dayOfWeek = usage["dayOfWeek"]
@@ -56,8 +57,8 @@ def printTestClass():
                     totalSection = usage["totalSection"]
                     endSection = startSection + totalSection - 1
 
-                    print("{} {} 第{}周 星期{} 第{} - {}节".format(department, subject,
-                                                             startWeek, dayOfWeek,
-                                                             startSection, endSection))
+                    print("{} {} {} 第{}周 星期{} 第{} - {}节".format(department, subject, placeName,
+                                                                startWeek, dayOfWeek,
+                                                                startSection, endSection))
 
     print("\n考试科目获取完毕，祝您愉快 >_+<")
