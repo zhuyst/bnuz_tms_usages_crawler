@@ -1,4 +1,4 @@
-from typing import Coroutine
+from typing import Generator
 
 import session
 import util
@@ -66,7 +66,7 @@ class Usage(object):
 
 
 # 获取教学楼
-def getBuildings(c: Coroutine):
+def getBuildings(c: Generator[Building, Building, None]):
     response = session.get(buildingsUrl)
     json = response.json()
     for name in json["buildings"]:
@@ -76,11 +76,11 @@ def getBuildings(c: Coroutine):
 
 
 # 获取教室
-def getPlaces(c: Coroutine):
+def getPlaces(c: Generator[Place, Place, None]):
     while True:
         building: Building = (yield)
         if not building:
-            return
+            break
 
         url = placesUrl.replace(":building", building.name)
         response = session.get(url)
@@ -88,15 +88,15 @@ def getPlaces(c: Coroutine):
         for p in json:
             c.send(Place(building, p))
 
-        c.close()
+    c.close()
 
 
 # 获取教室使用情况
-def getUsages(c: Coroutine):
+def getUsages(c: Generator[Usage, Usage, None]):
     while True:
         place: Place = (yield)
         if not place:
-            return
+            break
 
         url = usagesUrl.replace(":building", place.building.name).replace(":place", place.id)
         response = session.get(url)
@@ -104,20 +104,19 @@ def getUsages(c: Coroutine):
         for usage in json:
             c.send(Usage(place, usage))
 
+    c.close()
 
-# 打印考试周的考试科目
-def printTestClass():
-    print("开始获取考试科目信息...\n")
-    # print("\n考试科目获取完毕，祝您愉快 >_+<")
 
+def getTestClass():
     while True:
         usage = (yield)
         if not usage:
-            return
+            break
 
         startWeek = usage.startWeek
         _type = usage.type
         if _type == "ks" and startWeek == 18 or startWeek == 19:
+            place = usage.place.name
             department = usage.department
             subject = usage.description
             dayOfWeek = usage.dayOfWeek
@@ -125,6 +124,21 @@ def printTestClass():
             totalSection = usage.totalSection
             endSection = startSection + totalSection - 1
 
-            print("{} {} 第{}周 星期{} 第{} - {}节".format(department, subject,
-                                                     startWeek, dayOfWeek,
-                                                     startSection, endSection))
+            print("{} {} {} 第{}周 星期{} 第{} - {}节".format(department, subject, place,
+                                                        startWeek, dayOfWeek,
+                                                        startSection, endSection))
+
+
+# 打印考试周的考试科目
+def printTestClass():
+    print("开始获取考试科目信息...\n")
+
+    testClass = getTestClass()
+    next(testClass)
+    usages = getUsages(testClass)
+    next(usages)
+    places = getPlaces(usages)
+    next(places)
+    getBuildings(places)
+
+    print("\n考试科目获取完毕，祝您愉快 >_+<")
